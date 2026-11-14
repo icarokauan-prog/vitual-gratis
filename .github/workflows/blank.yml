@@ -1,0 +1,42 @@
+name: Virtual PC Online
+
+on:
+  workflow_dispatch:
+    inputs:
+      access_password:
+        description: "Senha de acesso"
+        required: true
+        type: string
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 360
+
+    steps:
+      - name: Configurar senha
+        run: |
+          echo "runner:${{ inputs.access_password }}" | sudo chpasswd
+
+      - name: Instalar ambiente gráfico
+        run: |
+          sudo apt update
+          sudo DEBIAN_FRONTEND=noninteractive apt install -y \
+            xfce4 xfce4-goodies xrdp dbus-x11
+
+      - name: Configurar área de trabalho
+        run: |
+          echo "startxfce4" > ~/.xsession
+          sudo systemctl enable xrdp
+          sudo systemctl restart xrdp
+
+      - name: Instalar Ngrok
+        uses: ngrok/ngrok-action@v1
+        with:
+          auth-token: ${{ secrets.NGROK_AUTHTOKEN }}
+          command: tcp 3389
+
+      - name: Verificar ambiente
+        run: |
+          echo "Ambiente XFCE instalado."
+          echo "Servidor RDP configurado."
